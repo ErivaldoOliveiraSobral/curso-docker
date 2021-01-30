@@ -1,3 +1,7 @@
+## Como rodar este projeto
+É necessário ter instalado o Docker localmente
+https://docs.docker.com/engine/install/ubuntu/
+
 ## Comandos
 - Iniciar containers:
 `docker-componse up`
@@ -16,3 +20,6 @@
 
 - Logs dos Workers:
 `docker-compose logs -f -t worker`
+
+## Server
+http://localhost:80
