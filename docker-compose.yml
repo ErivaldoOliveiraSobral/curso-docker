@@ -1,0 +1,74 @@
+version: '3'
+volumes:
+  pgdata:
+networks:
+  banco:
+  web:
+  fila:
+services:
+  #### Serviço de Banco de Dados ####
+  db:
+    image: postgres:9.6
+    networks:
+      - banco
+    volumes:
+      # Volume de dados
+      - pgdata:/var/lib/postgresql/data
+      # Scripts
+      - ./scripts:/scripts
+      - ./scripts/inicio.sql:/docker-entrypoint-initdb.d/inicio.sql
+    environment:
+      - POSTGRES_HOST_AUTH_METHOD=trust
+      # - POSTGRES_PASSWORD=123456
+  
+  #### Serviço de Frontend ####
+  frontend:
+    image: nginx:1.13
+    networks:
+      - web
+    depends_on:
+      - app
+    volumes:
+      # Site
+      - ./web:/usr/share/nginx/html
+      # Configuração de proxy reverso
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - 80:80
+
+  #### Serviço de Aplicação ####
+  app:
+    image: python:3.6
+    networks:
+      - banco
+      - web
+      - fila
+    depends_on:
+      - db
+      - queue
+    volumes:
+      # Aplicação
+      - ./app:/app
+    working_dir: /app
+    command: bash ./app.sh
+    environment:
+      - DB_NAME=email_sender
+
+  #### Serviço de Fila ####
+  queue:
+    image: redis:3.2
+    networks:
+      - fila
+  
+  #### Serviço de Disparos ####
+  worker:
+    build: worker
+    volumes:
+      #Worker
+      - ./worker:/worker
+    working_dir: /worker
+    command: worker.py
+    networks:
+      - fila
+    depends_on:
+      - queue
